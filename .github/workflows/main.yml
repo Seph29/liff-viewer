@@ -3,6 +3,8 @@ name: Build Multi-Platform & Multi-Architecture Executable
 on:
   push:
     branches: [ main ]
+    tags:
+      - "v*"          # <-- pour publier une vraie Release quand on pousse un tag (ajout)
   pull_request:
     branches: [ main ]
 
@@ -18,17 +20,41 @@ jobs:
           docker run --rm -v "$(pwd)":/app -w /app ubuntu:20.04 bash -lc "
             set -e
             apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-              python3 python3-pip python3-tk libpython3.8 binutils patchelf
+              python3 python3-pip python3-tk libpython3.8 binutils patchelf wget ca-certificates
             python3 -m pip install --upgrade pip wheel
             python3 -m pip install -r requirements.txt pyinstaller
             python3 -m PyInstaller --noconsole --onefile --name liff-viewer \
               --add-data 'ico/app.png:ico' --hidden-import=PIL._tkinter_finder \
               main.py
+
+            # --- Build AppImage (x86_64) ---
+            cd dist
+            mkdir -p AppDir/usr/bin AppDir/usr/share/applications AppDir/usr/share/icons/hicolor/256x256/apps
+            cp liff-viewer AppDir/usr/bin/
+            cp ../ico/app.png AppDir/usr/share/icons/hicolor/256x256/apps/liff-viewer.png
+            cat > AppDir/usr/share/applications/liff-viewer.desktop <<EOF
+            [Desktop Entry]
+            Name=LIFF Viewer
+            Exec=liff-viewer
+            Icon=liff-viewer
+            Type=Application
+            Categories=Graphics;
+            EOF
+            wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+            wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-appimage/releases/download/continuous/linuxdeploy-plugin-appimage-x86_64.AppImage
+            chmod +x linuxdeploy-*.AppImage
+            # Exécuter sans FUSE dans le conteneur
+            APPIMAGE_EXTRACT_AND_RUN=1 ./linuxdeploy-x86_64.AppImage --appdir AppDir --output appimage --plugin appimage
+            mv ./*.AppImage liff-viewer-x86_64.AppImage
           "
       - uses: actions/upload-artifact@v4
         with:
           name: liff-viewer_linux_x86_64
           path: dist/liff-viewer
+      - uses: actions/upload-artifact@v4
+        with:
+          name: liff-viewer_linux_x86_64_appimage
+          path: dist/liff-viewer-x86_64.AppImage
 
   build-linux-arm:
     name: "Build for Linux (ARM64)"
@@ -41,17 +67,40 @@ jobs:
           docker run --platform linux/arm64 --rm -v "$(pwd)":/app -w /app arm64v8/ubuntu:20.04 bash -lc "
             set -e
             apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-              python3 python3-pip python3-tk libpython3.8 binutils patchelf
+              python3 python3-pip python3-tk libpython3.8 binutils patchelf wget ca-certificates
             python3 -m pip install --upgrade pip wheel
             python3 -m pip install -r requirements.txt pyinstaller
             python3 -m PyInstaller --noconsole --onefile --name liff-viewer \
               --add-data 'ico/app.png:ico' --hidden-import=PIL._tkinter_finder \
               main.py
+
+            # --- Build AppImage (ARM64/aarch64) ---
+            cd dist
+            mkdir -p AppDir/usr/bin AppDir/usr/share/applications AppDir/usr/share/icons/hicolor/256x256/apps
+            cp liff-viewer AppDir/usr/bin/
+            cp ../ico/app.png AppDir/usr/share/icons/hicolor/256x256/apps/liff-viewer.png
+            cat > AppDir/usr/share/applications/liff-viewer.desktop <<EOF
+            [Desktop Entry]
+            Name=LIFF Viewer
+            Exec=liff-viewer
+            Icon=liff-viewer
+            Type=Application
+            Categories=Graphics;
+            EOF
+            wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-aarch64.AppImage
+            wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-appimage/releases/download/continuous/linuxdeploy-plugin-appimage-aarch64.AppImage
+            chmod +x linuxdeploy-*.AppImage
+            APPIMAGE_EXTRACT_AND_RUN=1 ./linuxdeploy-aarch64.AppImage --appdir AppDir --output appimage --plugin appimage
+            mv ./*.AppImage liff-viewer-aarch64.AppImage
           "
       - uses: actions/upload-artifact@v4
         with:
           name: liff-viewer_linux_arm64
           path: dist/liff-viewer
+      - uses: actions/upload-artifact@v4
+        with:
+          name: liff-viewer_linux_arm64_appimage
+          path: dist/liff-viewer-aarch64.AppImage
 
   # --- BUILDS WINDOWS ---
   build-windows-x86:
@@ -150,3 +199,35 @@ jobs:
         with:
           name: liff-viewer_macos_x86_64
           path: dist/liff-viewer
+
+  # --- RELEASE ---
+  release:
+    name: "Publish GitHub Release"
+    runs-on: ubuntu-latest
+    needs:
+      - build-linux-x86
+      - build-linux-arm
+      - build-windows-x86
+      - build-windows-arm
+      - build-macos-arm64
+      - build-macos-x86_64
+    permissions:
+      contents: write
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release_assets
+
+      - name: Create Release (tag push -> public; sinon -> draft nightly)
+        uses: softprops/action-gh-release@v2
+        with:
+          # si tag 'v*' -> Release publique
+          files: release_assets/**/*
+          draft: ${{ !startsWith(github.ref, 'refs/tags/') }}
+          prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && '' || format('nightly-{0}', github.run_number) }}
+          name: ${{ startsWith(github.ref, 'refs/tags/') && '' || format('Nightly {0}', github.run_number) }}
+          body: ${{ startsWith(github.ref, 'refs/tags/') && '' || 'Build automatique depuis main.' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
