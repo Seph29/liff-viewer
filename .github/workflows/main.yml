@@ -29,10 +29,14 @@ jobs:
 
             # --- AppImage (x86_64 via appimagetool) ---
             cd dist
-            mkdir -p AppDir/usr/bin AppDir/usr/share/applications AppDir/usr/share/icons/hicolor/256x256/apps
+            mkdir -p AppDir/usr/bin AppDir/usr/share/icons/hicolor/256x256/apps
             cp liff-viewer AppDir/usr/bin/
+            # icône à la fois dans hicolor et à la racine (appimagetool scanne AppDir/*.png)
             cp ../ico/app.png AppDir/usr/share/icons/hicolor/256x256/apps/liff-viewer.png
-            cat > AppDir/usr/share/applications/liff-viewer.desktop <<EOF
+            cp ../ico/app.png AppDir/liff-viewer.png
+
+            # .desktop A LA RACINE d'AppDir (appimagetool attend AppDir/*.desktop)
+            cat > AppDir/liff-viewer.desktop <<EOF
             [Desktop Entry]
             Type=Application
             Name=LIFF Viewer
@@ -41,6 +45,8 @@ jobs:
             Categories=Graphics;
             Terminal=false
             EOF
+
+            # AppRun lance le binaire
             cat > AppDir/AppRun <<'EOF'
             #!/bin/sh
             HERE=\"$(dirname \"$(readlink -f \"$0\")\")\"
@@ -50,6 +56,7 @@ jobs:
             chmod +x AppDir/AppRun
             chmod +x AppDir/usr/bin/liff-viewer
 
+            # Construire l’AppImage sans FUSE
             wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
             chmod +x appimagetool-x86_64.AppImage
             ARCH=x86_64 APPIMAGE_EXTRACT_AND_RUN=1 ./appimagetool-x86_64.AppImage AppDir liff-viewer-x86_64.AppImage
@@ -85,10 +92,12 @@ jobs:
 
             # --- AppImage (ARM64 via appimagetool) ---
             cd dist
-            mkdir -p AppDir/usr/bin AppDir/usr/share/applications AppDir/usr/share/icons/hicolor/256x256/apps
+            mkdir -p AppDir/usr/bin AppDir/usr/share/icons/hicolor/256x256/apps
             cp liff-viewer AppDir/usr/bin/
             cp ../ico/app.png AppDir/usr/share/icons/hicolor/256x256/apps/liff-viewer.png
-            cat > AppDir/usr/share/applications/liff-viewer.desktop <<EOF
+            cp ../ico/app.png AppDir/liff-viewer.png
+
+            cat > AppDir/liff-viewer.desktop <<EOF
             [Desktop Entry]
             Type=Application
             Name=LIFF Viewer
@@ -97,6 +106,7 @@ jobs:
             Categories=Graphics;
             Terminal=false
             EOF
+
             cat > AppDir/AppRun <<'EOF'
             #!/bin/sh
             HERE=\"$(dirname \"$(readlink -f \"$0\")\")\"
