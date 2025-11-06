@@ -27,16 +27,15 @@ jobs:
               --add-data 'ico/app.png:ico' --hidden-import=PIL._tkinter_finder \
               main.py
 
-            # --- AppImage (x86_64 via appimagetool) ---
+            echo '== Génération AppImage x86_64 =='
             cd dist
             mkdir -p AppDir/usr/bin AppDir/usr/share/icons/hicolor/256x256/apps
             cp liff-viewer AppDir/usr/bin/
-            # icône à la fois dans hicolor et à la racine
             cp ../ico/app.png AppDir/usr/share/icons/hicolor/256x256/apps/liff-viewer.png
             cp ../ico/app.png AppDir/liff-viewer.png
 
-            # .desktop A LA RACINE d'AppDir
-            cat > AppDir/liff-viewer.desktop <<EOF
+            # .desktop (heredoc litéral)
+            cat > AppDir/liff-viewer.desktop <<'EOF'
             [Desktop Entry]
             Type=Application
             Name=LIFF Viewer
@@ -46,23 +45,21 @@ jobs:
             Terminal=false
             EOF
 
-            # AppRun
+            # AppRun (heredoc litéral)
             cat > AppDir/AppRun <<'EOF'
             #!/bin/sh
             HERE=\"$(dirname \"$(readlink -f \"$0\")\")\"
             export PATH=\"$HERE/usr/bin:$PATH\"
             exec liff-viewer \"$@\"
             EOF
-            chmod +x AppDir/AppRun
-            chmod +x AppDir/usr/bin/liff-viewer
+            chmod +x AppDir/AppRun AppDir/usr/bin/liff-viewer
 
-            # Construire l’AppImage sans FUSE, nom de sortie fixe
             wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
             chmod +x appimagetool-x86_64.AppImage
             ARCH=x86_64 APPIMAGE_EXTRACT_AND_RUN=1 ./appimagetool-x86_64.AppImage AppDir liff-viewer-x86_64.AppImage
 
             echo '== Contenu dist =='
-            ls -l
+            ls -lah
             test -f liff-viewer-x86_64.AppImage || { echo 'AppImage manquante'; exit 1; }
           "
       - uses: actions/upload-artifact@v4
@@ -92,14 +89,14 @@ jobs:
               --add-data 'ico/app.png:ico' --hidden-import=PIL._tkinter_finder \
               main.py
 
-            # --- AppImage (ARM64 via appimagetool) ---
+            echo '== Génération AppImage aarch64 =='
             cd dist
             mkdir -p AppDir/usr/bin AppDir/usr/share/icons/hicolor/256x256/apps
             cp liff-viewer AppDir/usr/bin/
             cp ../ico/app.png AppDir/usr/share/icons/hicolor/256x256/apps/liff-viewer.png
             cp ../ico/app.png AppDir/liff-viewer.png
 
-            cat > AppDir/liff-viewer.desktop <<EOF
+            cat > AppDir/liff-viewer.desktop <<'EOF'
             [Desktop Entry]
             Type=Application
             Name=LIFF Viewer
@@ -115,15 +112,14 @@ jobs:
             export PATH=\"$HERE/usr/bin:$PATH\"
             exec liff-viewer \"$@\"
             EOF
-            chmod +x AppDir/AppRun
-            chmod +x AppDir/usr/bin/liff-viewer
+            chmod +x AppDir/AppRun AppDir/usr/bin/liff-viewer
 
             wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-aarch64.AppImage
             chmod +x appimagetool-aarch64.AppImage
             ARCH=aarch64 APPIMAGE_EXTRACT_AND_RUN=1 ./appimagetool-aarch64.AppImage AppDir liff-viewer-aarch64.AppImage
 
             echo '== Contenu dist =='
-            ls -l
+            ls -lah
             test -f liff-viewer-aarch64.AppImage || { echo 'AppImage manquante'; exit 1; }
           "
       - uses: actions/upload-artifact@v4
