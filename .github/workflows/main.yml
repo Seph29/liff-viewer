@@ -18,7 +18,7 @@ jobs:
       - name: "Compiler pour Linux x86_64 (Ubuntu 20.04, Python 3.8)"
         run: |
           docker run --rm -v "$(pwd)":/app -w /app ubuntu:20.04 bash -lc "
-            set -e
+            set -euo pipefail
             apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
               python3 python3-pip python3-tk libpython3.8 binutils patchelf wget ca-certificates
             python3 -m pip install --upgrade pip wheel
@@ -31,11 +31,11 @@ jobs:
             cd dist
             mkdir -p AppDir/usr/bin AppDir/usr/share/icons/hicolor/256x256/apps
             cp liff-viewer AppDir/usr/bin/
-            # icône à la fois dans hicolor et à la racine (appimagetool scanne AppDir/*.png)
+            # icône à la fois dans hicolor et à la racine
             cp ../ico/app.png AppDir/usr/share/icons/hicolor/256x256/apps/liff-viewer.png
             cp ../ico/app.png AppDir/liff-viewer.png
 
-            # .desktop A LA RACINE d'AppDir (appimagetool attend AppDir/*.desktop)
+            # .desktop A LA RACINE d'AppDir
             cat > AppDir/liff-viewer.desktop <<EOF
             [Desktop Entry]
             Type=Application
@@ -46,7 +46,7 @@ jobs:
             Terminal=false
             EOF
 
-            # AppRun lance le binaire
+            # AppRun
             cat > AppDir/AppRun <<'EOF'
             #!/bin/sh
             HERE=\"$(dirname \"$(readlink -f \"$0\")\")\"
@@ -56,12 +56,14 @@ jobs:
             chmod +x AppDir/AppRun
             chmod +x AppDir/usr/bin/liff-viewer
 
-            # Construire l’AppImage sans FUSE
+            # Construire l’AppImage sans FUSE, nom de sortie fixe
             wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
             chmod +x appimagetool-x86_64.AppImage
             ARCH=x86_64 APPIMAGE_EXTRACT_AND_RUN=1 ./appimagetool-x86_64.AppImage AppDir liff-viewer-x86_64.AppImage
 
+            echo '== Contenu dist =='
             ls -l
+            test -f liff-viewer-x86_64.AppImage || { echo 'AppImage manquante'; exit 1; }
           "
       - uses: actions/upload-artifact@v4
         with:
@@ -70,7 +72,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: liff-viewer_linux_x86_64_appimage
-          path: dist/*.AppImage
+          path: dist/liff-viewer-x86_64.AppImage
 
   build-linux-arm:
     name: "Build for Linux (ARM64)"
@@ -81,7 +83,7 @@ jobs:
       - name: "Compiler pour Linux ARM64 (Ubuntu 20.04, Python 3.8)"
         run: |
           docker run --platform linux/arm64 --rm -v "$(pwd)":/app -w /app arm64v8/ubuntu:20.04 bash -lc "
-            set -e
+            set -euo pipefail
             apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
               python3 python3-pip python3-tk libpython3.8 binutils patchelf wget ca-certificates
             python3 -m pip install --upgrade pip wheel
@@ -120,7 +122,9 @@ jobs:
             chmod +x appimagetool-aarch64.AppImage
             ARCH=aarch64 APPIMAGE_EXTRACT_AND_RUN=1 ./appimagetool-aarch64.AppImage AppDir liff-viewer-aarch64.AppImage
 
+            echo '== Contenu dist =='
             ls -l
+            test -f liff-viewer-aarch64.AppImage || { echo 'AppImage manquante'; exit 1; }
           "
       - uses: actions/upload-artifact@v4
         with:
@@ -129,7 +133,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: liff-viewer_linux_arm64_appimage
-          path: dist/*.AppImage
+          path: dist/liff-viewer-aarch64.AppImage
 
   # --- BUILDS WINDOWS ---
   build-windows-x86:
