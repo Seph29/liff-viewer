@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: "Compiler pour Linux x86_64 (Ubuntu 20.04, Python 3.8)"
         run: |
-          docker run --rm -v "$(pwd)":/app -w /app ubuntu:20.04 bash -lc "
+          docker run --rm --user "$(id -u):$(id -g)" -v "$(pwd)":/app -w /app ubuntu:20.04 bash -lc "
             set -euo pipefail
             apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
               python3 python3-pip python3-tk libpython3.8 binutils patchelf wget ca-certificates \
@@ -76,7 +76,7 @@ jobs:
       - uses: docker/setup-qemu-action@v3
       - name: "Compiler pour Linux ARM64 (Ubuntu 20.04, Python 3.8) — prépare AppDir uniquement"
         run: |
-          docker run --platform linux/arm64 --rm -v "$(pwd)":/app -w /app arm64v8/ubuntu:20.04 bash -lc "
+          docker run --platform linux/arm64 --rm --user "$(id -u):$(id -g)" -v "$(pwd)":/app -w /app arm64v8/ubuntu:20.04 bash -lc "
             set -euo pipefail
             apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
               python3 python3-pip python3-tk libpython3.8 binutils patchelf wget ca-certificates \
@@ -128,6 +128,9 @@ jobs:
           find dist -maxdepth 2 -type f -print || true
           find dist -maxdepth 3 -type d -print || true
 
+          # Re-prendre possession si besoin (si une ancienne build avait laissé des fichiers root)
+          sudo chown -R "$USER:$USER" dist || true
+
           # --- Fix critique : s'assurer que l'exe est bien dans AppDir/usr/bin ---
           if [ ! -d dist/AppDir ]; then
             echo "::error::dist/AppDir manquant (la préparation AppDir côté ARM n'a pas eu lieu)."
@@ -143,7 +146,7 @@ jobs:
           # S'assurer que AppRun est exécutable
           chmod +x dist/AppDir/AppRun || true
 
-          # Optionnel : valider le .desktop pour des messages clairs
+          # Optionnel : valider le .desktop
           if command -v desktop-file-validate >/dev/null 2>&1; then
             echo "== Validation du .desktop =="
             desktop-file-validate dist/AppDir/liff-viewer.desktop || true
