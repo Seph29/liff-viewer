@@ -136,6 +136,9 @@ jobs:
           find dist -maxdepth 2 -type f -print || true
           find dist -maxdepth 3 -type d -print || true
 
+          # *** FIX PERMISSIONS (nouvelle ligne) ***
+          sudo chown -R $(id -u):$(id -g) dist
+
           # S'assurer que AppRun/exe sont utilisables
           chmod +x dist/AppDir/AppRun || true
           chmod +x dist/AppDir/usr/bin/liff-viewer || true
@@ -198,10 +201,10 @@ jobs:
           name: liff-viewer_windows_arm64
           path: dist/liff-viewer.exe
           
-  # --- BUILDS MACOS (deux jobs: ARM64 et Intel x86_64) ---
+  # --- BUILDS MACOS ---
   build-macos-arm64:
     name: "Build for macOS (ARM64)"
-    runs-on: macos-latest  # Apple Silicon
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v4
@@ -233,7 +236,7 @@ jobs:
 
   build-macos-x86_64:
     name: "Build for macOS (Intel x86_64)"
-    runs-on: macos-15-intel  # Runner Intel
+    runs-on: macos-15-intel
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v4
