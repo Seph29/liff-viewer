@@ -13,19 +13,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: "Compiler pour Linux x86_64"
+      - name: "Compiler pour Linux x86_64 (Ubuntu 20.04)"
         run: |
-          docker run --rm -v "$(pwd)":/app -w /app ubuntu:20.04 /bin/bash -c "
-            apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends software-properties-common binutils
+          docker run --rm -v "$(pwd)":/app -w /app ubuntu:20.04 bash -lc "
+            set -e
+            apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+              software-properties-common ca-certificates curl binutils patchelf
             add-apt-repository ppa:deadsnakes/ppa -y && apt-get update
-            apt-get install -y python3.10 python3.10-distutils python3.10-venv libpython3.10
-            python3.10 -m ensurepip --upgrade && python3.10 -m pip install -r requirements.txt
-            python3.10 -m PyInstaller --noconsole --onefile --add-data 'ico/app.png:ico' --hidden-import=PIL._tkinter_finder main.py
+            apt-get install -y --no-install-recommends \
+              python3.10 python3.10-venv python3.10-tk libpython3.10
+            # installe pip pour Python 3.10 (évite le paquet distutils)
+            curl -sS https://bootstrap.pypa.io/pip/3.10/get-pip.py -o get-pip.py
+            python3.10 get-pip.py
+            python3.10 -m pip install --upgrade pip wheel
+            python3.10 -m pip install -r requirements.txt pyinstaller
+            python3.10 -m PyInstaller --noconsole --onefile --name liff_viewer \
+              --add-data 'ico/app.png:ico' --hidden-import=PIL._tkinter_finder \
+              main.py
           "
       - uses: actions/upload-artifact@v4
         with:
-          name: uploader_linux_x86_64
-          path: dist/uploader
+          name: liff_viewer_linux_x86_64
+          path: dist/liff_viewer
 
   build-linux-arm:
     name: "Build for Linux (ARM64)"
@@ -33,19 +42,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-qemu-action@v3
-      - name: "Compiler pour Linux ARM64"
+      - name: "Compiler pour Linux ARM64 (Ubuntu 20.04)"
         run: |
-          docker run --platform linux/arm64 --rm -v "$(pwd)":/app -w /app arm64v8/ubuntu:20.04 /bin/bash -c "
-            apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends software-properties-common binutils
+          docker run --platform linux/arm64 --rm -v "$(pwd)":/app -w /app arm64v8/ubuntu:20.04 bash -lc "
+            set -e
+            apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+              software-properties-common ca-certificates curl binutils patchelf
             add-apt-repository ppa:deadsnakes/ppa -y && apt-get update
-            apt-get install -y python3.10 python3.10-distutils python3.10-venv libpython3.10
-            python3.10 -m ensurepip --upgrade && python3.10 -m pip install -r requirements.txt
-            python3.10 -m PyInstaller --noconsole --onefile --add-data 'ico/app.png:ico' --hidden-import=PIL._tkinter_finder main.py
+            apt-get install -y --no-install-recommends \
+              python3.10 python3.10-venv python3.10-tk libpython3.10
+            curl -sS https://bootstrap.pypa.io/pip/3.10/get-pip.py -o get-pip.py
+            python3.10 get-pip.py
+            python3.10 -m pip install --upgrade pip wheel
+            python3.10 -m pip install -r requirements.txt pyinstaller
+            python3.10 -m PyInstaller --noconsole --onefile --name liff_viewer \
+              --add-data 'ico/app.png:ico' --hidden-import=PIL._tkinter_finder \
+              main.py
           "
       - uses: actions/upload-artifact@v4
         with:
-          name: uploader_linux_arm64
-          path: dist/uploader
+          name: liff_viewer_linux_arm64
+          path: dist/liff_viewer
+
 
   # --- BUILDS WINDOWS ---
   build-windows-x86:
