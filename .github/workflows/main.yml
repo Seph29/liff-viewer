@@ -35,7 +35,6 @@ jobs:
             cp ../ico/app.png AppDir/usr/share/icons/hicolor/256x256/apps/liff-viewer.png
             cp ../ico/app.png AppDir/liff-viewer.png
 
-            # .desktop sans heredoc
             printf '%s\n' \
               '[Desktop Entry]' \
               'Type=Application' \
@@ -45,12 +44,11 @@ jobs:
               'Categories=Graphics;' \
               'Terminal=false' > AppDir/liff-viewer.desktop
 
-            # AppRun sans heredoc
             printf '%s\n' \
               '#!/bin/sh' \
-              'HERE="$(dirname "$(readlink -f "$0")")"' \
-              'export PATH="$HERE/usr/bin:$PATH"' \
-              'exec liff-viewer "$@"' > AppDir/AppRun
+              'HERE=\"$(dirname \"$(readlink -f \"$0\")\")\"' \
+              'export PATH=\"$HERE/usr/bin:$PATH\"' \
+              'exec liff-viewer \"$@\"' > AppDir/AppRun
             chmod +x AppDir/AppRun AppDir/usr/bin/liff-viewer
 
             wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
@@ -76,7 +74,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-qemu-action@v3
-      - name: "Compiler pour Linux ARM64 (Ubuntu 20.04, Python 3.8)"
+      - name: "Compiler pour Linux ARM64 (Ubuntu 20.04, Python 3.8) — prépare AppDir uniquement"
         run: |
           docker run --platform linux/arm64 --rm -v "$(pwd)":/app -w /app arm64v8/ubuntu:20.04 bash -lc "
             set -euo pipefail
@@ -89,7 +87,7 @@ jobs:
               --add-data 'ico/app.png:ico' --hidden-import=PIL._tkinter_finder \
               main.py
 
-            echo '== Génération AppImage aarch64 =='
+            echo '== Préparation AppDir aarch64 (pas de packaging ici) =='
             cd dist
             mkdir -p AppDir/usr/bin AppDir/usr/share/icons/hicolor/256x256/apps
             cp liff-viewer AppDir/usr/bin/
@@ -107,19 +105,23 @@ jobs:
 
             printf '%s\n' \
               '#!/bin/sh' \
-              'HERE="$(dirname "$(readlink -f "$0")")"' \
-              'export PATH="$HERE/usr/bin:$PATH"' \
-              'exec liff-viewer "$@"' > AppDir/AppRun
+              'HERE=\"$(dirname \"$(readlink -f \"$0\")\")\"' \
+              'export PATH=\"$HERE/usr/bin:$PATH\"' \
+              'exec liff-viewer \"$@\"' > AppDir/AppRun
             chmod +x AppDir/AppRun AppDir/usr/bin/liff-viewer
 
-            wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-aarch64.AppImage
-            chmod +x appimagetool-aarch64.AppImage
-            ARCH=aarch64 APPIMAGE_EXTRACT_AND_RUN=1 ./appimagetool-aarch64.AppImage AppDir liff-viewer-aarch64.AppImage
-
-            echo '== Contenu dist =='
-            ls -lah
-            test -f liff-viewer-aarch64.AppImage || { echo 'AppImage manquante'; exit 1; }
+            echo '== AppDir prêt =='
+            find AppDir -maxdepth 2 -type f -ls
           "
+      - name: "Packager l’AppImage ARM64 sur l’hôte x86_64"
+        run: |
+          sudo apt-get update && sudo apt-get install -y squashfs-tools file desktop-file-utils wget
+          cd dist
+          wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x appimagetool-x86_64.AppImage
+          ARCH=aarch64 APPIMAGE_EXTRACT_AND_RUN=1 ./appimagetool-x86_64.AppImage AppDir liff-viewer-aarch64.AppImage
+          ls -lah
+          test -f liff-viewer-aarch64.AppImage || { echo 'AppImage ARM manquante'; exit 1; }
       - uses: actions/upload-artifact@v4
         with:
           name: liff-viewer_linux_arm64
