@@ -114,14 +114,38 @@ jobs:
             find AppDir -maxdepth 2 -type f -ls
           "
       - name: "Packager l’AppImage ARM64 sur l’hôte x86_64"
+        shell: bash
         run: |
-          sudo apt-get update && sudo apt-get install -y squashfs-tools file desktop-file-utils wget
+          set -euo pipefail
+
+          # deps pour appimagetool (hôte x86_64)
+          sudo apt-get update -y
+          sudo apt-get install -y --no-install-recommends squashfs-tools file desktop-file-utils wget
+
+          echo "== Vérification de la sortie du build ARM =="
+          pwd
+          echo "Contenu racine du repo :"
+          ls -lah
+          echo "Contenu de dist (si présent) :"
+          ls -lah dist || true
+
+          if [ ! -d dist/AppDir ]; then
+            echo "::error::AppDir manquant. Dump rapide :"
+            find . -maxdepth 2 -type d -print
+            echo "Astuce: assure-toi que l'étape docker ARM a bien créé dist/AppDir (volume -v \"$(pwd)\":/app)."
+            exit 1
+          fi
+
           cd dist
+          echo "== Packaging AppImage aarch64 =="
           wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
           chmod +x appimagetool-x86_64.AppImage
           ARCH=aarch64 APPIMAGE_EXTRACT_AND_RUN=1 ./appimagetool-x86_64.AppImage AppDir liff-viewer-aarch64.AppImage
+
+          echo "== Contenu dist =="
           ls -lah
-          test -f liff-viewer-aarch64.AppImage || { echo 'AppImage ARM manquante'; exit 1; }
+          test -f liff-viewer-aarch64.AppImage || { echo "::error::AppImage ARM manquante"; exit 1; }
+
       - uses: actions/upload-artifact@v4
         with:
           name: liff-viewer_linux_arm64
