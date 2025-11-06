@@ -67,29 +67,29 @@ jobs:
       - run: pyinstaller --noconsole --onefile --name liff-viewer --icon=ico/app.ico --add-data "ico/app.png;ico" --hidden-import=PIL._tkinter_finder main.py
       - uses: actions/upload-artifact@v4
         with:
-          name: liff_viewer_windows_x86_64
+          name: liff-viewer_windows_x86_64
           path: dist/liff-viewer.exe
 
-  #build-windows-arm:
-  #  name: "Build for Windows (ARM64)"
-  #  runs-on: windows-11-arm
-  #  steps:
-  #    - uses: actions/checkout@v4
-  #    - uses: actions/setup-python@v4
-  #      with:
-  #        python-version: "3.10.11"
-  #        cache: pip
-  #    - run: pip install -r requirements.txt
-  #    - run: pyinstaller --noconsole --onefile --name liff-viewer --icon=ico/app.ico --add-data "ico/app.png;ico" --hidden-import=PIL._tkinter_finder main.py
-  #    - uses: actions/upload-artifact@v4
-  #      with:
-  #        name: liff_viewer_windows_arm64
-  #        path: dist/liff-viewer.exe
-
+  build-windows-arm:
+    name: "Build for Windows (ARM64)"
+    runs-on: windows-11-arm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.10.11"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: pyinstaller --noconsole --onefile --name liff-viewer --icon=ico/app.ico --add-data "ico/app.png;ico" --hidden-import=PIL._tkinter_finder main.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: liff-viewer_windows_arm64
+          path: dist/liff-viewer.exe
+          
   # --- BUILDS MACOS (deux jobs: ARM64 et Intel x86_64) ---
   build-macos-arm64:
     name: "Build for macOS (ARM64)"
-    runs-on: macos-14  # Apple Silicon
+    runs-on: macos-latest  # Apple Silicon
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v4
@@ -121,7 +121,7 @@ jobs:
 
   build-macos-x86_64:
     name: "Build for macOS (Intel x86_64)"
-    runs-on: macos-13  # Runner Intel
+    runs-on: macos-15-intel  # Runner Intel
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v4
