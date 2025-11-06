@@ -34,24 +34,22 @@ jobs:
             cp ../ico/app.png AppDir/usr/share/icons/hicolor/256x256/apps/liff-viewer.png
             cp ../ico/app.png AppDir/liff-viewer.png
 
-            # .desktop (heredoc litéral)
-            cat > AppDir/liff-viewer.desktop <<'EOF'
-            [Desktop Entry]
-            Type=Application
-            Name=LIFF Viewer
-            Exec=liff-viewer
-            Icon=liff-viewer
-            Categories=Graphics;
-            Terminal=false
-            EOF
+            # .desktop sans heredoc
+            printf '%s\n' \
+              '[Desktop Entry]' \
+              'Type=Application' \
+              'Name=LIFF Viewer' \
+              'Exec=liff-viewer' \
+              'Icon=liff-viewer' \
+              'Categories=Graphics;' \
+              'Terminal=false' > AppDir/liff-viewer.desktop
 
-            # AppRun (heredoc litéral)
-            cat > AppDir/AppRun <<'EOF'
-            #!/bin/sh
-            HERE=\"$(dirname \"$(readlink -f \"$0\")\")\"
-            export PATH=\"$HERE/usr/bin:$PATH\"
-            exec liff-viewer \"$@\"
-            EOF
+            # AppRun sans heredoc
+            printf '%s\n' \
+              '#!/bin/sh' \
+              'HERE="$(dirname "$(readlink -f "$0")")"' \
+              'export PATH="$HERE/usr/bin:$PATH"' \
+              'exec liff-viewer "$@"' > AppDir/AppRun
             chmod +x AppDir/AppRun AppDir/usr/bin/liff-viewer
 
             wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
@@ -96,22 +94,20 @@ jobs:
             cp ../ico/app.png AppDir/usr/share/icons/hicolor/256x256/apps/liff-viewer.png
             cp ../ico/app.png AppDir/liff-viewer.png
 
-            cat > AppDir/liff-viewer.desktop <<'EOF'
-            [Desktop Entry]
-            Type=Application
-            Name=LIFF Viewer
-            Exec=liff-viewer
-            Icon=liff-viewer
-            Categories=Graphics;
-            Terminal=false
-            EOF
+            printf '%s\n' \
+              '[Desktop Entry]' \
+              'Type=Application' \
+              'Name=LIFF Viewer' \
+              'Exec=liff-viewer' \
+              'Icon=liff-viewer' \
+              'Categories=Graphics;' \
+              'Terminal=false' > AppDir/liff-viewer.desktop
 
-            cat > AppDir/AppRun <<'EOF'
-            #!/bin/sh
-            HERE=\"$(dirname \"$(readlink -f \"$0\")\")\"
-            export PATH=\"$HERE/usr/bin:$PATH\"
-            exec liff-viewer \"$@\"
-            EOF
+            printf '%s\n' \
+              '#!/bin/sh' \
+              'HERE="$(dirname "$(readlink -f "$0")")"' \
+              'export PATH="$HERE/usr/bin:$PATH"' \
+              'exec liff-viewer "$@"' > AppDir/AppRun
             chmod +x AppDir/AppRun AppDir/usr/bin/liff-viewer
 
             wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-aarch64.AppImage
