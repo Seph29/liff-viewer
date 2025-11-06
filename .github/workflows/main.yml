@@ -25,7 +25,7 @@ jobs:
             python3 -m pip install --upgrade pip wheel
             python3 -m pip install -r requirements.txt pyinstaller
             python3 -m PyInstaller --noconsole --onefile --name liff-viewer \
-              --add-data 'ico/app.png:ico' --add-data 'ico/app.ico;ico' --hidden-import=PIL._tkinter_finder \
+              --add-data 'ico/app.png:ico' --add-data 'ico/app.ico:ico' --hidden-import=PIL._tkinter_finder \
               main.py
 
             echo '== Génération AppImage x86_64 =='
@@ -89,7 +89,7 @@ jobs:
             python3 -m pip install --upgrade pip wheel
             python3 -m pip install -r requirements.txt pyinstaller
             python3 -m PyInstaller --noconsole --onefile --name liff-viewer \
-              --add-data 'ico/app.png:ico' --add-data 'ico/app.ico;ico' --hidden-import=PIL._tkinter_finder \
+              --add-data 'ico/app.png:ico' --add-data 'ico/app.ico:ico' --hidden-import=PIL._tkinter_finder \
               main.py
 
             echo '== Préparation AppDir aarch64 (pas de packaging ici) =='
@@ -229,7 +229,7 @@ jobs:
         run: |
           pyinstaller \
             --noconsole --windowed --onefile --name liff-viewer --icon=ico/app.icns \
-            --add-data "ico/app.png:ico" --add-data 'ico/app.ico;ico' --hidden-import=PIL._tkinter_finder \
+            --add-data "ico/app.png:ico" --add-data 'ico/app.ico:ico' --hidden-import=PIL._tkinter_finder \
             --target-arch arm64 main.py
       - uses: actions/upload-artifact@v4
         with:
@@ -261,7 +261,7 @@ jobs:
         run: |
           pyinstaller \
             --noconsole --windowed --onefile --name liff-viewer --icon=ico/app.icns \
-            --add-data "ico/app.png:ico" --add-data 'ico/app.ico;ico' --hidden-import=PIL._tkinter_finder \
+            --add-data "ico/app.png:ico" --add-data 'ico/app.ico:ico' --hidden-import=PIL._tkinter_finder \
             --target-arch x86_64 main.py
       - uses: actions/upload-artifact@v4
         with:
