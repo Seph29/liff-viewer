@@ -4,7 +4,7 @@ on:
   push:
     branches: [ main ]
     tags:
-      - "v*"          # <-- pour publier une vraie Release quand on pousse un tag (ajout)
+      - "v*"
   pull_request:
     branches: [ main ]
 
@@ -27,30 +27,32 @@ jobs:
               --add-data 'ico/app.png:ico' --hidden-import=PIL._tkinter_finder \
               main.py
 
-            # --- AppImage ---
+            # --- AppImage (x86_64 via appimagetool) ---
             cd dist
             mkdir -p AppDir/usr/bin AppDir/usr/share/applications AppDir/usr/share/icons/hicolor/256x256/apps
             cp liff-viewer AppDir/usr/bin/
             cp ../ico/app.png AppDir/usr/share/icons/hicolor/256x256/apps/liff-viewer.png
             cat > AppDir/usr/share/applications/liff-viewer.desktop <<EOF
             [Desktop Entry]
+            Type=Application
             Name=LIFF Viewer
             Exec=liff-viewer
             Icon=liff-viewer
-            Type=Application
             Categories=Graphics;
+            Terminal=false
             EOF
+            cat > AppDir/AppRun <<'EOF'
+            #!/bin/sh
+            HERE=\"$(dirname \"$(readlink -f \"$0\")\")\"
+            export PATH=\"$HERE/usr/bin:$PATH\"
+            exec liff-viewer \"$@\"
+            EOF
+            chmod +x AppDir/AppRun
+            chmod +x AppDir/usr/bin/liff-viewer
 
-            wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
-            wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-appimage/releases/download/continuous/linuxdeploy-plugin-appimage-x86_64.AppImage
-            chmod +x linuxdeploy-*.AppImage
-
-            APPIMAGE_EXTRACT_AND_RUN=1 ./linuxdeploy-x86_64.AppImage \
-              --appdir AppDir \
-              --executable AppDir/usr/bin/liff-viewer \
-              --desktop-file AppDir/usr/share/applications/liff-viewer.desktop \
-              --icon-file AppDir/usr/share/icons/hicolor/256x256/apps/liff-viewer.png \
-              --output appimage --plugin appimage
+            wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+            chmod +x appimagetool-x86_64.AppImage
+            ARCH=x86_64 APPIMAGE_EXTRACT_AND_RUN=1 ./appimagetool-x86_64.AppImage AppDir liff-viewer-x86_64.AppImage
 
             ls -l
           "
@@ -81,30 +83,32 @@ jobs:
               --add-data 'ico/app.png:ico' --hidden-import=PIL._tkinter_finder \
               main.py
 
-            # --- AppImage ---
+            # --- AppImage (ARM64 via appimagetool) ---
             cd dist
             mkdir -p AppDir/usr/bin AppDir/usr/share/applications AppDir/usr/share/icons/hicolor/256x256/apps
             cp liff-viewer AppDir/usr/bin/
             cp ../ico/app.png AppDir/usr/share/icons/hicolor/256x256/apps/liff-viewer.png
             cat > AppDir/usr/share/applications/liff-viewer.desktop <<EOF
             [Desktop Entry]
+            Type=Application
             Name=LIFF Viewer
             Exec=liff-viewer
             Icon=liff-viewer
-            Type=Application
             Categories=Graphics;
+            Terminal=false
             EOF
+            cat > AppDir/AppRun <<'EOF'
+            #!/bin/sh
+            HERE=\"$(dirname \"$(readlink -f \"$0\")\")\"
+            export PATH=\"$HERE/usr/bin:$PATH\"
+            exec liff-viewer \"$@\"
+            EOF
+            chmod +x AppDir/AppRun
+            chmod +x AppDir/usr/bin/liff-viewer
 
-            wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-aarch64.AppImage
-            wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-appimage/releases/download/continuous/linuxdeploy-plugin-appimage-aarch64.AppImage
-            chmod +x linuxdeploy-*.AppImage
-
-            APPIMAGE_EXTRACT_AND_RUN=1 ./linuxdeploy-aarch64.AppImage \
-              --appdir AppDir \
-              --executable AppDir/usr/bin/liff-viewer \
-              --desktop-file AppDir/usr/share/applications/liff-viewer.desktop \
-              --icon-file AppDir/usr/share/icons/hicolor/256x256/apps/liff-viewer.png \
-              --output appimage --plugin appimage
+            wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-aarch64.AppImage
+            chmod +x appimagetool-aarch64.AppImage
+            ARCH=aarch64 APPIMAGE_EXTRACT_AND_RUN=1 ./appimagetool-aarch64.AppImage AppDir liff-viewer-aarch64.AppImage
 
             ls -l
           "
@@ -237,7 +241,6 @@ jobs:
       - name: Create Release (tag push -> public; sinon -> draft nightly)
         uses: softprops/action-gh-release@v2
         with:
-          # si tag 'v*' -> Release publique
           files: release_assets/**/*
           draft: ${{ !startsWith(github.ref, 'refs/tags/') }}
           prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
