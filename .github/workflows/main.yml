@@ -123,17 +123,30 @@ jobs:
           sudo apt-get install -y --no-install-recommends squashfs-tools file desktop-file-utils wget
 
           echo "== Vérification de la sortie du build ARM =="
-          pwd
-          echo "Contenu racine du repo :"
           ls -lah
-          echo "Contenu de dist (si présent) :"
           ls -lah dist || true
+          find dist -maxdepth 2 -type f -print || true
+          find dist -maxdepth 3 -type d -print || true
 
+          # --- Fix critique : s'assurer que l'exe est bien dans AppDir/usr/bin ---
           if [ ! -d dist/AppDir ]; then
-            echo "::error::AppDir manquant. Dump rapide :"
-            find . -maxdepth 2 -type d -print
-            echo "Astuce: assure-toi que l'étape docker ARM a bien créé dist/AppDir (volume -v \"$(pwd)\":/app)."
+            echo "::error::dist/AppDir manquant (la préparation AppDir côté ARM n'a pas eu lieu)."
             exit 1
+          fi
+          if [ ! -x dist/AppDir/usr/bin/liff-viewer ]; then
+            echo "== Injecte l'exécutable dans AppDir/usr/bin =="
+            mkdir -p dist/AppDir/usr/bin
+            cp dist/liff-viewer dist/AppDir/usr/bin/liff-viewer
+            chmod +x dist/AppDir/usr/bin/liff-viewer
+          fi
+
+          # S'assurer que AppRun est exécutable
+          chmod +x dist/AppDir/AppRun || true
+
+          # Optionnel : valider le .desktop pour des messages clairs
+          if command -v desktop-file-validate >/dev/null 2>&1; then
+            echo "== Validation du .desktop =="
+            desktop-file-validate dist/AppDir/liff-viewer.desktop || true
           fi
 
           cd dist
