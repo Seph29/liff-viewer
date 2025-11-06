@@ -1,0 +1,146 @@
+name: Build Multi-Platform & Multi-Architecture Executable
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # --- BUILDS LINUX ---
+  build-linux-x86:
+    name: "Build for Linux (x86_64)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Compiler pour Linux x86_64"
+        run: |
+          docker run --rm -v "$(pwd)":/app -w /app ubuntu:20.04 /bin/bash -c "
+            apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends software-properties-common binutils
+            add-apt-repository ppa:deadsnakes/ppa -y && apt-get update
+            apt-get install -y python3.10 python3.10-distutils python3.10-venv libpython3.10
+            python3.10 -m ensurepip --upgrade && python3.10 -m pip install -r requirements.txt
+            python3.10 -m PyInstaller --noconsole --onefile --add-data 'ico/app.png:ico' --hidden-import=PIL._tkinter_finder main.py
+          "
+      - uses: actions/upload-artifact@v4
+        with:
+          name: uploader_linux_x86_64
+          path: dist/uploader
+
+  build-linux-arm:
+    name: "Build for Linux (ARM64)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - name: "Compiler pour Linux ARM64"
+        run: |
+          docker run --platform linux/arm64 --rm -v "$(pwd)":/app -w /app arm64v8/ubuntu:20.04 /bin/bash -c "
+            apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends software-properties-common binutils
+            add-apt-repository ppa:deadsnakes/ppa -y && apt-get update
+            apt-get install -y python3.10 python3.10-distutils python3.10-venv libpython3.10
+            python3.10 -m ensurepip --upgrade && python3.10 -m pip install -r requirements.txt
+            python3.10 -m PyInstaller --noconsole --onefile --add-data 'ico/app.png:ico' --hidden-import=PIL._tkinter_finder main.py
+          "
+      - uses: actions/upload-artifact@v4
+        with:
+          name: uploader_linux_arm64
+          path: dist/uploader
+
+  # --- BUILDS WINDOWS ---
+  build-windows-x86:
+    name: "Build for Windows (x86_64)"
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.10.11"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: pyinstaller --noconsole --onefile --icon=ico/app.ico --add-data "ico/app.png;ico" --hidden-import=PIL._tkinter_finder main.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: uploader_windows_x86_64
+          path: dist/uploader.exe
+
+  #build-windows-arm:
+  #  name: "Build for Windows (ARM64)"
+  #  runs-on: windows-11-arm
+  #  steps:
+  #    - uses: actions/checkout@v4
+  #    - uses: actions/setup-python@v4
+  #      with:
+  #        python-version: "3.10.11"
+  #        cache: pip
+  #    - run: pip install -r requirements.txt
+  #    - run: pyinstaller --noconsole --onefile --icon=ico/app.ico --add-data "ico/app.png;ico" --hidden-import=PIL._tkinter_finder main.py
+  #    - uses: actions/upload-artifact@v4
+  #      with:
+  #        name: uploader_windows_arm64
+  #        path: dist/uploader.exe
+
+  # --- BUILDS MACOS (deux jobs: ARM64 et Intel x86_64) ---
+  build-macos-arm64:
+    name: "Build for macOS (ARM64)"
+    runs-on: macos-14  # Apple Silicon
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.10.11"
+          cache: pip
+      - name: "Installer les dépendances"
+        run: pip install -r requirements.txt
+      - name: "Créer le fichier .icns à partir du PNG"
+        run: |
+          mkdir -p app.iconset
+          sips -z 16 16 ico/app.png --out app.iconset/icon_16x16.png
+          sips -z 32 32 ico/app.png --out app.iconset/icon_16x16@2x.png
+          sips -z 32 32 ico/app.png --out app.iconset/icon_32x32.png
+          sips -z 64 64 ico/app.png --out app.iconset/icon_32x32@2x.png
+          sips -z 128 128 ico/app.png --out app.iconset/icon_128x128.png
+          sips -z 256 256 ico/app.png --out app.iconset/icon_128x128@2x.png
+          iconutil -c icns app.iconset -o ico/app.icns
+      - name: "PyInstaller (ARM64)"
+        run: |
+          pyinstaller \
+            --noconsole --windowed --onefile --icon=ico/app.icns \
+            --add-data "ico/app.png:ico" --hidden-import=PIL._tkinter_finder \
+            --target-arch arm64 main.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: uploader_macos_arm64
+          path: dist/uploader
+
+  build-macos-x86_64:
+    name: "Build for macOS (Intel x86_64)"
+    runs-on: macos-13  # Runner Intel
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.10.11"
+          cache: pip
+      - name: "Installer les dépendances"
+        run: pip install -r requirements.txt
+      - name: "Créer le fichier .icns à partir du PNG"
+        run: |
+          mkdir -p app.iconset
+          sips -z 16 16 ico/app.png --out app.iconset/icon_16x16.png
+          sips -z 32 32 ico/app.png --out app.iconset/icon_16x16@2x.png
+          sips -z 32 32 ico/app.png --out app.iconset/icon_32x32.png
+          sips -z 64 64 ico/app.png --out app.iconset/icon_32x32@2x.png
+          sips -z 128 128 ico/app.png --out app.iconset/icon_128x128.png
+          sips -z 256 256 ico/app.png --out app.iconset/icon_128x128@2x.png
+          iconutil -c icns app.iconset -o ico/app.icns
+      - name: "PyInstaller (x86_64)"
+        run: |
+          pyinstaller \
+            --noconsole --windowed --onefile --icon=ico/app.icns \
+            --add-data "ico/app.png:ico" --hidden-import=PIL._tkinter_finder \
+            --target-arch x86_64 main.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: uploader_macos_x86_64
+          path: dist/uploader
