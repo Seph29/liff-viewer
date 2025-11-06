@@ -27,7 +27,7 @@ jobs:
               --add-data 'ico/app.png:ico' --hidden-import=PIL._tkinter_finder \
               main.py
 
-            # --- Build AppImage (x86_64) ---
+            # --- AppImage ---
             cd dist
             mkdir -p AppDir/usr/bin AppDir/usr/share/applications AppDir/usr/share/icons/hicolor/256x256/apps
             cp liff-viewer AppDir/usr/bin/
@@ -40,12 +40,19 @@ jobs:
             Type=Application
             Categories=Graphics;
             EOF
+
             wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
             wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-appimage/releases/download/continuous/linuxdeploy-plugin-appimage-x86_64.AppImage
             chmod +x linuxdeploy-*.AppImage
-            # Exécuter sans FUSE dans le conteneur
-            APPIMAGE_EXTRACT_AND_RUN=1 ./linuxdeploy-x86_64.AppImage --appdir AppDir --output appimage --plugin appimage
-            mv ./*.AppImage liff-viewer-x86_64.AppImage
+
+            APPIMAGE_EXTRACT_AND_RUN=1 ./linuxdeploy-x86_64.AppImage \
+              --appdir AppDir \
+              --executable AppDir/usr/bin/liff-viewer \
+              --desktop-file AppDir/usr/share/applications/liff-viewer.desktop \
+              --icon-file AppDir/usr/share/icons/hicolor/256x256/apps/liff-viewer.png \
+              --output appimage --plugin appimage
+
+            ls -l
           "
       - uses: actions/upload-artifact@v4
         with:
@@ -54,7 +61,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: liff-viewer_linux_x86_64_appimage
-          path: dist/liff-viewer-x86_64.AppImage
+          path: dist/*.AppImage
 
   build-linux-arm:
     name: "Build for Linux (ARM64)"
@@ -74,7 +81,7 @@ jobs:
               --add-data 'ico/app.png:ico' --hidden-import=PIL._tkinter_finder \
               main.py
 
-            # --- Build AppImage (ARM64/aarch64) ---
+            # --- AppImage ---
             cd dist
             mkdir -p AppDir/usr/bin AppDir/usr/share/applications AppDir/usr/share/icons/hicolor/256x256/apps
             cp liff-viewer AppDir/usr/bin/
@@ -87,11 +94,19 @@ jobs:
             Type=Application
             Categories=Graphics;
             EOF
+
             wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-aarch64.AppImage
             wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-appimage/releases/download/continuous/linuxdeploy-plugin-appimage-aarch64.AppImage
             chmod +x linuxdeploy-*.AppImage
-            APPIMAGE_EXTRACT_AND_RUN=1 ./linuxdeploy-aarch64.AppImage --appdir AppDir --output appimage --plugin appimage
-            mv ./*.AppImage liff-viewer-aarch64.AppImage
+
+            APPIMAGE_EXTRACT_AND_RUN=1 ./linuxdeploy-aarch64.AppImage \
+              --appdir AppDir \
+              --executable AppDir/usr/bin/liff-viewer \
+              --desktop-file AppDir/usr/share/applications/liff-viewer.desktop \
+              --icon-file AppDir/usr/share/icons/hicolor/256x256/apps/liff-viewer.png \
+              --output appimage --plugin appimage
+
+            ls -l
           "
       - uses: actions/upload-artifact@v4
         with:
@@ -100,7 +115,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: liff-viewer_linux_arm64_appimage
-          path: dist/liff-viewer-aarch64.AppImage
+          path: dist/*.AppImage
 
   # --- BUILDS WINDOWS ---
   build-windows-x86:
